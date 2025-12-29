@@ -39,7 +39,7 @@ module.exports.load = async function (router, db) {
    * GET /api
    * Returns the status of the API.
    */
-  router.get("/api", authenticate, async (req, res) => {
+  router.get("", authenticate, async (req, res) => {
     discordLog('api access', `API Status check requested`);
     res.send({
       status: true,
@@ -49,10 +49,10 @@ module.exports.load = async function (router, db) {
   });
 
   /**
-   * GET api/v3/userinfo
+   * GET /api/v3/userinfo
    * Returns the user information.
    */
-  router.get("api/v3/userinfo", authenticate, async (req, res) => {
+  router.get("/v3/userinfo", authenticate, async (req, res) => {
     const { id } = req.query;
 
     if (!id) {
@@ -109,10 +109,10 @@ module.exports.load = async function (router, db) {
   });
 
   /**
-   * POST api/v3/setcoins
+   * POST /api/v3/setcoins
    * Sets the number of coins for a user.
    */
-  router.post("api/v3/setcoins", authenticate, async (req, res) => {
+  router.post("/v3/setcoins", authenticate, async (req, res) => {
     if (typeof req.body !== "object")
       return res.send({ status: "body must be an object" });
     if (Array.isArray(req.body))
@@ -166,10 +166,10 @@ module.exports.load = async function (router, db) {
   });
 
   /**
-   * POST api/v3/setplan
+   * POST /api/v3/setplan
    * Sets the plan for a user.
    */
-  router.post("api/v3/setplan", authenticate, async (req, res) => {
+  router.post("/v3/setplan", authenticate, async (req, res) => {
     if (!req.body) return res.send({ status: "missing body" });
 
     if (typeof req.body.id !== "string")
@@ -198,10 +198,10 @@ module.exports.load = async function (router, db) {
   });
 
   /**
-   * POST api/v3/setresources
+   * POST /api/v3/setresources
    * Sets the resources for a user.
    */
-  router.post("api/v3/setresources", authenticate, async (req, res) => {
+  router.post("/v3/setresources", authenticate, async (req, res) => {
     if (!req.body) return res.send({ status: "missing body" });
 
     if (typeof req.body.id !== "string")
@@ -286,10 +286,10 @@ module.exports.load = async function (router, db) {
   });
 
   /**
-   * POST api/v3/ban
+   * POST /api/v3/ban
    * Bans a user.
    */
-  router.post("api/v3/ban", authenticate, async (req, res) => {
+  router.post("/v3/ban", authenticate, async (req, res) => {
     if (typeof req.body !== "object")
       return res.send({ status: "body must be an object" });
     if (Array.isArray(req.body))
@@ -318,10 +318,10 @@ module.exports.load = async function (router, db) {
   });
 
   /**
-   * POST api/v3/unban
+   * POST /api/v3/unban
    * Unbans a user.
    */
-  router.post("api/v3/unban", authenticate, async (req, res) => {
+  router.post("/v3/unban", authenticate, async (req, res) => {
     if (typeof req.body !== "object")
       return res.send({ status: "body must be an object" });
     if (Array.isArray(req.body))

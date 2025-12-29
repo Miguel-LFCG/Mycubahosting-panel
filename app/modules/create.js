@@ -218,9 +218,11 @@ router.get("/server/create", authMiddleware, async (req, res) => {
 
                 // Pre-flight check: verify location has available allocations
                 try {
-                    const availability = await AppAPI.checkLocationAvailability(location);
+                    // Ensure location is treated as an integer for the API call
+                    const locationInt = parseInt(location, 10);
+                    const availability = await AppAPI.checkLocationAvailability(locationInt);
                     if (!availability.available) {
-                        console.warn(`Location ${location} out of stock:`, availability.reason);
+                        console.warn(`Location ${locationInt} out of stock:`, availability.reason);
                         return res.redirect(`/server/new?err=NODEOUTOFSTOCK`);
                     }
                 } catch (checkErr) {

@@ -123,8 +123,8 @@ if (cluster.isMaster) {
 
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    res.setHeader("X-Powered-By", `13rd Gen Heliactyl Next (${settings.platform_codename})`);
-    res.setHeader("X-Heliactyl", `Heliactyl Next v${settings.version} - "${settings.platform_codename}"`);
+    res.setHeader("X-Powered-By", `MyCuba Hosting Next (${settings.platform_codename})`);
+    res.setHeader("X-MyCuba", `MyCuba Hosting Next v${settings.version} - "${settings.platform_codename}"`);
     next();
   });
 
@@ -208,7 +208,7 @@ if (cluster.isMaster) {
       chalk.white(chalk.gray("[cluster]") + " Cluster state updated: ") + chalk.green('running')
     );
     console.log(
-      chalk.gray(`Heliactyl Next ${settings.version} (${settings.platform_codename}) - webserver is now listening on port ${settings.website.port}`)
+      chalk.gray(`MyCuba Hosting Next ${settings.version} (${settings.platform_codename}) - webserver is now listening on port ${settings.website.port}`)
     );
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {

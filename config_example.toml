@@ -1,5 +1,5 @@
 # ======================================================
-# Heliactyl Configuration File
+# MyCuba Hosting Configuration File
 # ======================================================
 
 # ------------------------------------------------------
@@ -144,7 +144,7 @@ is_default = false
 # --- Password Generator ---
   [api.client.passwordgenerator]
   signup = true
-  note = "Use this to disable registering on Heliactyl."
+  note = "Use this to disable registering on MyCuba Hosting."
   length = 24
 
 # --- Permissions / Allow List ---
@@ -162,7 +162,7 @@ is_default = false
 # --- OAuth2 Configuration ---
 # IMPORTANT: /api endpoint is required!
   [api.client.oauth2]
-  _comment = "Go to https://discord.dev/ and create an application to set up OAuth2. This is required for Heliactyl to work. You must also set the redirect URL to the link below."
+  _comment = "Go to https://discord.dev/ and create an application to set up OAuth2. This is required for MyCuba Hosting to work. You must also set the redirect URL to the link below."
   id = "0000000000000000000"
   secret = "aaaaaaaaa0aa00aaaaaaaaaaaaaa0a_a"
   link = "https://example.com"
@@ -448,7 +448,7 @@ path = "ws"
 every = 60                    # Seconds between rewards (60 = 1 minute)
 coins = 1                     # Base coins per reward interval
 state_update_interval = 1000  # Milliseconds between state updates to clients
-_note = "This is the 2nd-generation version of Heliactyl's AFK system with Party Boost."
+_note = "This is the 2nd-generation version of MyCuba Hosting's AFK system with Party Boost."
 
   # Party Boost - Multiply rewards when multiple users are AFK simultaneously
   [api.afk.party_boost]
@@ -470,7 +470,7 @@ _note = "This is the 2nd-generation version of Heliactyl's AFK system with Party
 [whitelist]
 status = false
 users = [ "User ID" ]
-note = "This allows only specific people to be able to login to the Heliactyl dashboard. This does not affect your Panel."
+note = "This allows only specific people to be able to login to the MyCuba Hosting dashboard. This does not affect your Panel."
 
 [security]
 enableCaptcha = false
