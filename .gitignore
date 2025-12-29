@@ -11,3 +11,4 @@ backup/
 backup-*
 tests/
 logs/
+storage/heliactyl.pid
