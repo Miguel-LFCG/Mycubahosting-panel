@@ -138,7 +138,7 @@ module.exports.load = async function (router, db) {
     res.send({ status: "success" });
   });
 
-  router.post("/api/v3/addcoins", authenticate, async (req, res) => {
+  router.post("/v3/addcoins", authenticate, async (req, res) => {
     if (typeof req.body !== "object")
       return res.send({ status: "body must be an object" });
     if (Array.isArray(req.body))

@@ -24,6 +24,13 @@ const { getClientAPI } = require("../../handlers/pterodactylSingleton.js");
 const { serverActivityLog } = require("../../handlers/log.js");
 const getPteroUser = require("../../handlers/getPteroUser.js");
 
+// Helper: resolve the user's package (falls back to default)
+async function getUserPackage(db, userId) {
+  const fallback = settings.api?.client?.packages?.default || "default";
+  if (!userId) return fallback;
+  return (await db.get(`package-${userId}`)) || fallback;
+}
+
 module.exports.load = async function (router, db) {
   const ClientAPI = getClientAPI();
   const authMiddleware = (req, res, next) => requireAuth(req, res, next, false, db);
@@ -45,11 +52,13 @@ module.exports.load = async function (router, db) {
     try {
       const renewalData = await db.get(`renewal_${serverId}`);
       const hasRenewalBypass = await db.get(`renewbypass-${user}`);
+      const userPackage = await getUserPackage(db, user);
+      const isPremiumPackage = userPackage !== (settings.api?.client?.packages?.default || "default");
 
       if (!renewalData) {
         // Initialize renewal data if it doesn't exist
         const now = new Date();
-        const nextRenewal = hasRenewalBypass ?
+        const nextRenewal = (hasRenewalBypass || isPremiumPackage) ?
           new Date('2099-12-31T23:59:59.999Z').toISOString() :
           new Date(now.getTime() + RENEWAL_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
 
@@ -58,15 +67,15 @@ module.exports.load = async function (router, db) {
           nextRenewal: nextRenewal,
           isActive: true,
           renewalCount: 0,
-          hasRenewalBypass: hasRenewalBypass,
+          hasRenewalBypass: hasRenewalBypass || isPremiumPackage,
           userId: user // Store userId for future reference
         };
         await db.set(`renewal_${serverId}`, initialRenewalData);
         return initialRenewalData;
       }
 
-      // If renewal bypass has been purchased, update the nextRenewal date
-      if (hasRenewalBypass && !renewalData.hasRenewalBypass) {
+      // If renewal bypass or premium package is active, update the nextRenewal date
+      if ((hasRenewalBypass || isPremiumPackage) && !renewalData.hasRenewalBypass) {
         const updatedRenewalData = {
           ...renewalData,
           nextRenewal: 'Unlimited',
@@ -154,6 +163,11 @@ module.exports.load = async function (router, db) {
 
         if (!renewalData || !renewalData.isActive) continue;
 
+        // Bypass checks for servers marked unlimited or with bypass
+        if (renewalData.hasRenewalBypass || renewalData.nextRenewal === 'Unlimited') {
+          continue;
+        }
+
         const nextRenewal = new Date(renewalData.nextRenewal);
         const hoursUntilExpiration = (nextRenewal - now) / (1000 * 60 * 60);
 
@@ -177,6 +191,20 @@ module.exports.load = async function (router, db) {
     try {
       const renewalData = await db.get(`renewal_${serverId}`);
       if (!renewalData) return;
+
+      // Do not expire/delete servers owned by premium packages (non-default)
+      if (renewalData.userId) {
+        const userPackage = await getUserPackage(db, renewalData.userId);
+        const isPremiumPackage = userPackage !== (settings.api?.client?.packages?.default || "default");
+        if (isPremiumPackage) {
+          // Ensure the record reflects unlimited renewal
+          renewalData.isActive = true;
+          renewalData.hasRenewalBypass = true;
+          renewalData.nextRenewal = 'Unlimited';
+          await db.set(`renewal_${serverId}`, renewalData);
+          return;
+        }
+      }
 
       const now = new Date();
       const nextRenewal = new Date(renewalData.nextRenewal);
