@@ -89,6 +89,7 @@ module.exports.load = async function (router, db) {
     discordLog('api access', `API userinfo retrieved for user ID \`${id}\``);
     res.send({
       status: "success",
+      id: id,
       package: package,
       extra: (await db.get("extra-" + req.query.id))
         ? await db.get("extra-" + req.query.id)
@@ -105,6 +106,7 @@ module.exports.load = async function (router, db) {
             ? await db.get("coins-" + id)
             : 0
           : null,
+      renewalBypass: (await db.get(`renewbypass-${id}`)) ? true : false,
     });
   });
 
@@ -426,6 +428,48 @@ module.exports.load = async function (router, db) {
         message: "Failed to read log file" 
       });
     }
+  });
+
+  /**
+   * POST /api/v3/give_renewalbypass
+   * Give renewal bypass to a user
+   */
+  router.post("/v3/give_renewalbypass", authenticate, async (req, res) => {
+    if (!req.body) return res.send({ status: "missing body" });
+
+    if (typeof req.body.id !== "string")
+      return res.send({ status: "missing id" });
+
+    if (!(await db.get("users-" + req.body.id))) {
+      discordLog('api error', `API give_renewalbypass request: Invalid user ID \`${req.body.id}\``);
+      return res.send({ status: "invalid id" });
+    }
+
+    await db.set(`renewbypass-${req.body.id}`, true);
+    
+    discordLog('api give renewal bypass', `User ID: \`${req.body.id}\` | Renewal bypass granted`);
+    res.send({ status: "success", message: "Renewal bypass granted successfully." });
+  });
+
+  /**
+   * POST /api/v3/remove_renewalbypass
+   * Remove renewal bypass from a user
+   */
+  router.post("/v3/remove_renewalbypass", authenticate, async (req, res) => {
+    if (!req.body) return res.send({ status: "missing body" });
+
+    if (typeof req.body.id !== "string")
+      return res.send({ status: "missing id" });
+
+    if (!(await db.get("users-" + req.body.id))) {
+      discordLog('api error', `API remove_renewalbypass request: Invalid user ID \`${req.body.id}\``);
+      return res.send({ status: "invalid id" });
+    }
+
+    await db.delete(`renewbypass-${req.body.id}`);
+    
+    discordLog('api remove renewal bypass', `User ID: \`${req.body.id}\` | Renewal bypass removed`);
+    res.send({ status: "success", message: "Renewal bypass removed successfully." });
   });
 
   /**

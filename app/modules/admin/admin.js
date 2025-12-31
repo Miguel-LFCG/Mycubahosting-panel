@@ -647,6 +647,49 @@ module.exports.load = async function (router, db) {
     }
   });
 
+  // ==================== RENEWAL BYPASS ====================
+  // Give renewal bypass to a user
+  router.get("/admin/give_renewalbypass", requireAdmin, async (req, res) => {
+    const { id } = req.query;
+    
+    if (!id) return res.status(400).json({ error: "Missing user ID" });
+    
+    const dbUser = await db.get("users-" + id);
+    if (!dbUser) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    await db.set(`renewbypass-${id}`, true);
+    
+    discordLog(
+      `give renewal bypass`,
+      `${req.session.userinfo.username} gave renewal bypass to user with ID \`${id}\`.`
+    );
+    
+    res.status(200).json({ message: "Renewal bypass granted successfully." });
+  });
+
+  // Remove renewal bypass from a user
+  router.get("/admin/remove_renewalbypass", requireAdmin, async (req, res) => {
+    const { id } = req.query;
+    
+    if (!id) return res.status(400).json({ error: "Missing user ID" });
+    
+    const dbUser = await db.get("users-" + id);
+    if (!dbUser) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    await db.delete(`renewbypass-${id}`);
+    
+    discordLog(
+      `remove renewal bypass`,
+      `${req.session.userinfo.username} removed renewal bypass from user with ID \`${id}\`.`
+    );
+    
+    res.status(200).json({ message: "Renewal bypass removed successfully." });
+  });
+
   module.exports.suspend = async function (discordid) {
     if (!settings.api.client.allow.over_resources_suspend) return;
     
@@ -726,4 +769,47 @@ module.exports.load = async function (router, db) {
       }
     }
   };
+
+  // ==================== RENEWAL BYPASS ====================
+  // Give renewal bypass to a user
+  router.get("/admin/give_renewalbypass", requireAdmin, async (req, res) => {
+    const { id } = req.query;
+    
+    if (!id) return res.status(400).json({ error: "Missing user ID" });
+    
+    const dbUser = await db.get("users-" + id);
+    if (!dbUser) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    await db.set(`renewbypass-${id}`, true);
+    
+    discordLog(
+      `give renewal bypass`,
+      `${req.session.userinfo.username} gave renewal bypass to user with ID \`${id}\`.`
+    );
+    
+    res.status(200).json({ message: "Renewal bypass granted successfully." });
+  });
+
+  // Remove renewal bypass from a user
+  router.get("/admin/remove_renewalbypass", requireAdmin, async (req, res) => {
+    const { id } = req.query;
+    
+    if (!id) return res.status(400).json({ error: "Missing user ID" });
+    
+    const dbUser = await db.get("users-" + id);
+    if (!dbUser) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    await db.delete(`renewbypass-${id}`);
+    
+    discordLog(
+      `remove renewal bypass`,
+      `${req.session.userinfo.username} removed renewal bypass from user with ID \`${id}\`.`
+    );
+    
+    res.status(200).json({ message: "Renewal bypass removed successfully." });
+  });
 };

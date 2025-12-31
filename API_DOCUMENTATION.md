@@ -60,7 +60,7 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 
 ### 2. Get User Information
 
-Retrieve detailed information about a user including their package, resources, coins, and Pterodactyl account details.
+Retrieve detailed information about a user including their package, resources, coins, renewal bypass status, and Pterodactyl account details.
 
 **Endpoint:** `GET /api/v3/userinfo`
 
@@ -71,6 +71,8 @@ Retrieve detailed information about a user including their package, resources, c
 ```json
 {
   "status": "success",
+  "id": "123456789",
+  "renewalBypass": true,
   "package": {
     "name": "default",
     "ram": 2048,
@@ -101,6 +103,11 @@ Retrieve detailed information about a user including their package, resources, c
 curl -H "Authorization: Bearer YOUR_API_KEY" \
   "http://your-domain.com/api/v3/userinfo?id=123456789"
 ```
+
+**Notes:**
+- The `renewalBypass` field indicates if the user has renewal bypass:
+  - `true` = User has renewal bypass (servers never expire)
+  - `false` = User doesn't have bypass (servers expire normally)
 
 **Error Responses:**
 - `{ "status": "missing id" }` - User ID not provided
@@ -448,6 +455,133 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 
 ---
 
+### 10. Give Renewal Bypass to User *(NEW)*
+
+Grant renewal bypass to a user, exempting their servers from the renewal requirement.
+
+**Endpoint:** `POST /api/v3/give_renewalbypass`
+
+**Request Body:**
+```json
+{
+  "id": "123456789"
+}
+```
+
+**Parameters:**
+- `id` (string, required): User ID
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Renewal bypass granted successfully."
+}
+```
+
+**Example:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"123456789"}' \
+  http://your-domain.com/api/v3/give_renewalbypass
+```
+
+**Notes:**
+- Users with renewal bypass have servers that never expire
+- Bypass is permanent until explicitly removed
+- All servers created by users with bypass will not require renewal
+- This action is logged to Discord webhooks
+
+**Error Responses:**
+- `{ "status": "missing body" }` - No request body
+- `{ "status": "missing id" }` - User ID not provided
+- `{ "status": "invalid id" }` - User not found in database
+
+---
+
+### 11. Remove Renewal Bypass from User *(NEW)*
+
+Remove renewal bypass from a user, subjecting their servers to the renewal requirement again.
+
+**Endpoint:** `POST /api/v3/remove_renewalbypass`
+
+**Request Body:**
+```json
+{
+  "id": "123456789"
+}
+```
+
+**Parameters:**
+- `id` (string, required): User ID
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Renewal bypass removed successfully."
+}
+```
+
+**Example:**
+```bash
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"123456789"}' \
+  http://your-domain.com/api/v3/remove_renewalbypass
+```
+
+**Notes:**
+- Removing bypass will reactivate renewal requirements for future servers
+- Existing servers will have their renewal timers reset when next accessed
+- If auto-delete is enabled, expired servers will be deleted after the threshold
+
+**Error Responses:**
+- `{ "status": "missing body" }` - No request body
+- `{ "status": "missing id" }` - User ID not provided
+- `{ "status": "invalid id" }` - User not found in database
+
+---
+
+### 12. Check User Renewal Bypass Status
+
+Get renewal bypass status for a user (via userinfo endpoint).
+
+**Endpoint:** `GET /api/v3/userinfo`
+
+**Parameters:**
+- `id` (required): User ID
+
+**Response:**
+```json
+{
+  "status": "success",
+  "id": "123456789",
+  "renewalBypass": true,
+  "package": { ... },
+  "extra": { ... },
+  "userinfo": { ... },
+  "coins": 1500
+}
+```
+
+**Example:**
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "http://your-domain.com/api/v3/userinfo?id=123456789"
+```
+
+**Notes:**
+- The `renewalBypass` field indicates if the user has renewal bypass:
+  - `true` = User has renewal bypass (servers never expire)
+  - `false` or absent = User doesn't have bypass (servers expire normally)
+- Check this field before granting or to verify current status
+
+---
+
 ## Error Handling
 
 ### Common Error Responses
@@ -514,32 +648,50 @@ The API may implement rate limiting to prevent abuse. Check your `config.toml` f
 curl -H "Authorization: Bearer YOUR_API_KEY" \
   http://your-domain.com/api
 
-# 2. Get user information
+# 2. Get user information (includes renewal bypass status)
 curl -H "Authorization: Bearer YOUR_API_KEY" \
   "http://your-domain.com/api/v3/userinfo?id=123456789"
 
-# 3. Set user to premium package
+# 3. Check if user has renewal bypass (look for renewalBypass field in response)
+# If renewalBypass is true, user has bypass
+# If renewalBypass is false, user requires server renewals
+
+# 4. Give renewal bypass to user
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"id":"123456789","package":"premium"}' \
+  -d '{"id":"123456789"}' \
+  http://your-domain.com/api/v3/give_renewalbypass
+
+# 5. Remove renewal bypass from user
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"123456789"}' \
+  http://your-domain.com/api/v3/remove_renewalbypass
+
+# 6. Set user to premium package
+curl -X POST \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"id":"123456789","package":"2"}' \
   http://your-domain.com/api/v3/setplan
 
-# 4. Add extra resources
+# 7. Add extra resources
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"id":"123456789","ram":2048,"disk":10240,"servers":2}' \
   http://your-domain.com/api/v3/setresources
 
-# 5. Give coins as reward
+# 8. Give coins as reward
 curl -X POST \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"id":"123456789","coins":500}' \
   http://your-domain.com/api/v3/addcoins
 
-# 6. Check user's recent activity
+# 9. Check user's recent activity
 curl -H "Authorization: Bearer YOUR_API_KEY" \
   "http://your-domain.com/api/v3/userinteractions?id=123456789&limit=20"
 ```
@@ -564,6 +716,7 @@ response = requests.get(
 )
 user_data = response.json()
 print(f"User coins: {user_data['coins']}")
+print(f"Has renewal bypass: {user_data.get('renewalBypass', False)}")
 
 # Add coins
 response = requests.post(
@@ -572,6 +725,22 @@ response = requests.post(
     json={"id": "123456789", "coins": 100}
 )
 print(response.json())
+
+# Give renewal bypass
+response = requests.post(
+    f"{BASE_URL}/v3/give_renewalbypass",
+    headers=HEADERS,
+    json={"id": "123456789"}
+)
+print(f"Bypass granted: {response.json()}")
+
+# Remove renewal bypass
+response = requests.post(
+    f"{BASE_URL}/v3/remove_renewalbypass",
+    headers=HEADERS,
+    json={"id": "123456789"}
+)
+print(f"Bypass removed: {response.json()}")
 
 # Get user interactions
 response = requests.get(
@@ -592,12 +761,13 @@ const axios = require('axios');
 
 const API_KEY = 'your-api-key-here';
 const BASE_URL = 'http://your-domain.com/api';
+const BASE_URL_NO_API = 'http://your-domain.com';
 const headers = {
   'Authorization': `Bearer ${API_KEY}`,
   'Content-Type': 'application/json'
 };
 
-// Get user info
+// Get user info (includes renewal bypass status)
 async function getUserInfo(userId) {
   try {
     const response = await axios.get(`${BASE_URL}/v3/userinfo`, {
@@ -623,6 +793,32 @@ async function addCoins(userId, amount) {
   }
 }
 
+// Give renewal bypass
+async function giveRenewalBypass(userId) {
+  try {
+    const response = await axios.post(`${BASE_URL}/v3/give_renewalbypass`, 
+      { id: userId },
+      { headers }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}
+
+// Remove renewal bypass
+async function removeRenewalBypass(userId) {
+  try {
+    const response = await axios.post(`${BASE_URL}/v3/remove_renewalbypass`, 
+      { id: userId },
+      { headers }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}
+
 // Get user interactions
 async function getUserInteractions(userId, limit = 15) {
   try {
@@ -640,12 +836,24 @@ async function getUserInteractions(userId, limit = 15) {
 (async () => {
   const userId = '123456789';
   
+  // Get user info and check renewal bypass status
   const userInfo = await getUserInfo(userId);
   console.log('User Info:', userInfo);
+  console.log(`Renewal Bypass Enabled: ${userInfo.renewalBypass}`);
   
+  // Add coins
   const addResult = await addCoins(userId, 500);
   console.log('Add Coins Result:', addResult);
   
+  // Give renewal bypass
+  const bypassResult = await giveRenewalBypass(userId);
+  console.log('Bypass Given:', bypassResult);
+  
+  // Verify renewal bypass was granted
+  const updatedUserInfo = await getUserInfo(userId);
+  console.log(`Renewal Bypass Now: ${updatedUserInfo.renewalBypass}`);
+  
+  // Get user interactions
   const interactions = await getUserInteractions(userId, 20);
   console.log(`Found ${interactions.count} interactions`);
   interactions.interactions.forEach(int => {
