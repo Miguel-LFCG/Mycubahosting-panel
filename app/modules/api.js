@@ -343,6 +343,92 @@ module.exports.load = async function (router, db) {
   });
 
   /**
+   * GET /api/v3/userinteractions
+   * Returns the last N interactions of a user from the log file.
+   */
+  router.get("/v3/userinteractions", authenticate, async (req, res) => {
+    const { id, limit } = req.query;
+    
+    if (!id) {
+      discordLog('api error', `API userinteractions request: Missing user ID`);
+      return res.send({ status: "missing id" });
+    }
+    
+    if (typeof id !== "string") {
+      return res.send({ status: "id must be a string" });
+    }
+    
+    if (!(await db.get("users-" + id))) {
+      discordLog('api error', `API userinteractions request: Invalid user ID \`${id}\``);
+      return res.send({ status: "invalid id" });
+    }
+    
+    const maxLimit = parseInt(limit) || 15;
+    if (maxLimit < 1 || maxLimit > 100) {
+      return res.send({ status: "limit must be between 1 and 100" });
+    }
+    
+    try {
+      const fs = require('fs').promises;
+      const path = require('path');
+      const logPath = path.join(process.cwd(), 'logs', 'combined.log');
+      
+      // Check if log file exists
+      try {
+        await fs.access(logPath);
+      } catch (error) {
+        return res.send({ 
+          status: "error", 
+          message: "Log file not found" 
+        });
+      }
+      
+      const logContent = await fs.readFile(logPath, 'utf-8');
+      const lines = logContent.split('\n').reverse(); // Reverse to get most recent first
+      
+      const interactions = [];
+      const userIdPattern = new RegExp(`\\(${id}\\)|${id}`, 'i');
+      
+      for (const line of lines) {
+        if (interactions.length >= maxLimit) break;
+        
+        // Match lines that contain the user ID
+        if (userIdPattern.test(line)) {
+          // Parse timestamp, action, and details
+          const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+          const timestamp = timestampMatch ? timestampMatch[1] : null;
+          
+          // Clean up the line for better readability
+          const cleanLine = line.replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} \[[\w-]+\] \w+: /, '');
+          
+          interactions.push({
+            timestamp,
+            action: cleanLine.trim()
+          });
+        }
+      }
+      
+      discordLog('api access', `API userinteractions retrieved for user ID \`${id}\` (${interactions.length} interactions)`);
+      
+      res.send({
+        status: "success",
+        userId: id,
+        limit: maxLimit,
+        count: interactions.length,
+        interactions
+      });
+      
+    } catch (error) {
+      console.error('Error reading log file:', error);
+      discordLog('api error', `API userinteractions request failed: ${error.message}`);
+      res.send({ 
+        status: "error", 
+        message: "Failed to read log file" 
+      });
+    }
+  });
+
+  /**
    * Checks the authorization and returns the settings if authorized.
    * Renders the file based on the theme and sends the response.
    * @param {Object} req - The request object.
