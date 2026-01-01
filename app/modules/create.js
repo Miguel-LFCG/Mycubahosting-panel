@@ -176,7 +176,7 @@ router.get("/server/create", authMiddleware, async (req, res) => {
             let requiredpackage = Object.entries(settings.api.client.locations).filter((vname) => vname[0] == location)[0][1].package;
             if (requiredpackage)
                 if (!requiredpackage.includes(packagename ? packagename : settings.api.client.packages.default)) {
-                    return res.redirect(`../dashboard?err=INVALIDLOCATIONFORPACKAGE`);
+                    return res.redirect(`/server/new?err=INVALIDLOCATIONFORPACKAGE`);
                 }
 
             let egg = req.query.egg;
