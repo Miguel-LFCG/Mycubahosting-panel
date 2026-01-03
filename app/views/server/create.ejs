@@ -21,6 +21,57 @@
 .image-card a {
     scroll-behavior: auto;
 }
+
+/* Location tag badges */
+.location-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 9999px;
+    white-space: nowrap;
+}
+
+/* Predefined tag styles - customize as needed */
+.free-tag {
+    background-color: rgba(34, 197, 94, 0.2); /* green */
+    color: rgb(134, 239, 172);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.premium-tag {
+    background-color: rgba(168, 85, 247, 0.2); /* purple */
+    color: rgb(216, 180, 254);
+    border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.beta-tag {
+    background-color: rgba(59, 130, 246, 0.2); /* blue */
+    color: rgb(147, 197, 253);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.new-tag {
+    background-color: rgba(234, 179, 8, 0.2); /* yellow */
+    color: rgb(253, 224, 71);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.vip-tag {
+    background-color: rgba(249, 115, 22, 0.2); /* orange */
+    color: rgb(253, 186, 116);
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+/* Default tag style for any custom tags not matching above */
+.location-tag:not(.free-tag):not(.premium-tag):not(.beta-tag):not(.new-tag):not(.vip-tag) {
+    background-color: rgba(156, 163, 175, 0.2); /* gray */
+    color: rgb(209, 213, 219);
+    border: 1px solid rgba(156, 163, 175, 0.3);
+}
 </style>
     <!-- Content -->
 
@@ -114,7 +165,14 @@
     <div class="flex items-center space-x-3">
         <img class="h-8 w-8 rounded-full" src="<%= location.flag %>" alt="<%= location.country %> Flag">
         <div class="flex-1">
-            <h3 class="text-sm font-medium text-white"><%= location.country %></h3>
+            <div class="flex items-center gap-2">
+                <h3 class="text-sm font-medium text-white"><%= location.country %></h3>
+                <% if (location.tag) { %>
+                    <span class="location-tag <%= location.tag.toLowerCase() %>-tag">
+                        <%= location.tag %>
+                    </span>
+                <% } %>
+            </div>
             <p class="text-xs text-gray-400"><%= location.name %></p>
         </div>
     </div>
