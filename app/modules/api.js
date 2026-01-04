@@ -473,6 +473,137 @@ module.exports.load = async function (router, db) {
   });
 
   /**
+   * GET /api/v3/userservers
+   * Returns server IDs for a user
+   */
+  router.get("/v3/userservers", authenticate, async (req, res) => {
+    const { id } = req.query;
+    
+    if (!id) {
+      discordLog('api error', `API userservers request: Missing user ID`);
+      return res.send({ status: "missing id" });
+    }
+    
+    if (typeof id !== "string") {
+      return res.send({ status: "id must be a string" });
+    }
+    
+    if (!(await db.get("users-" + id))) {
+      discordLog('api error', `API userservers request: Invalid user ID \`${id}\``);
+      return res.send({ status: "invalid id" });
+    }
+    
+    try {
+      const PterodactylUser = await getPteroUser(id, db);
+      if (!PterodactylUser) {
+        return res.send({ 
+          status: "error", 
+          message: "Failed to fetch user data" 
+        });
+      }
+      
+      const servers = PterodactylUser.attributes?.relationships?.servers?.data || [];
+      const serverIds = servers.map(server => ({
+        id: server.attributes.id,
+        identifier: server.attributes.identifier,
+        name: server.attributes.name
+      }));
+      
+      discordLog('api access', `API userservers retrieved for user ID \`${id}\` (${serverIds.length} servers)`);
+      
+      res.send({
+        status: "success",
+        userId: id,
+        serverCount: serverIds.length,
+        servers: serverIds
+      });
+      
+    } catch (error) {
+      console.error('Error fetching user servers:', error);
+      discordLog('api error', `API userservers request failed: ${error.message}`);
+      res.send({ 
+        status: "error", 
+        message: "Failed to fetch servers" 
+      });
+    }
+  });
+
+  /**
+   * GET /api/v3/userserverdetails
+   * Returns detailed information about all servers for a user
+   */
+  router.get("/v3/userserverdetails", authenticate, async (req, res) => {
+    const { id } = req.query;
+    
+    if (!id) {
+      discordLog('api error', `API userserverdetails request: Missing user ID`);
+      return res.send({ status: "missing id" });
+    }
+    
+    if (typeof id !== "string") {
+      return res.send({ status: "id must be a string" });
+    }
+    
+    if (!(await db.get("users-" + id))) {
+      discordLog('api error', `API userserverdetails request: Invalid user ID \`${id}\``);
+      return res.send({ status: "invalid id" });
+    }
+    
+    try {
+      const PterodactylUser = await getPteroUser(id, db);
+      if (!PterodactylUser) {
+        return res.send({ 
+          status: "error", 
+          message: "Failed to fetch user data" 
+        });
+      }
+      
+      const servers = PterodactylUser.attributes?.relationships?.servers?.data || [];
+      const serverDetails = servers.map(server => ({
+        id: server.attributes.id,
+        identifier: server.attributes.identifier,
+        uuid: server.attributes.uuid,
+        name: server.attributes.name,
+        description: server.attributes.description,
+        status: server.attributes.status,
+        limits: {
+          memory: server.attributes.limits.memory,
+          disk: server.attributes.limits.disk,
+          cpu: server.attributes.limits.cpu,
+          swap: server.attributes.limits.swap,
+          io: server.attributes.limits.io
+        },
+        featureLimits: {
+          databases: server.attributes.feature_limits.databases,
+          allocations: server.attributes.feature_limits.allocations,
+          backups: server.attributes.feature_limits.backups
+        },
+        suspended: server.attributes.suspended,
+        node: server.attributes.node,
+        allocation: server.attributes.allocation,
+        egg: server.attributes.egg
+      }));
+      
+      discordLog('api access', `API userserverdetails retrieved for user ID \`${id}\` (${serverDetails.length} servers)`);
+      
+      res.send({
+        status: "success",
+        userId: id,
+        serverCount: serverDetails.length,
+        servers: serverDetails
+      });
+      
+    } catch (error) {
+      console.error('Error fetching user server details:', error);
+      discordLog('api error', `API userserverdetails request failed: ${error.message}`);
+      res.send({ 
+        status: "error", 
+        message: "Failed to fetch server details" 
+      });
+    }
+  });
+
+  /**
    * Checks the authorization and returns the settings if authorized.
    * Renders the file based on the theme and sends the response.
    * @param {Object} req - The request object.
